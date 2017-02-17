@@ -349,8 +349,8 @@ namespace cppHeaderParse
                                 sb.Append("\r\n");
 
                             lastCR = hasCR;
-                         }
-                        
+                        }
+
                         // if any c++ style values then enable flags
                         if (useFlags)
                             ns_area.AppendLine("    [Flags]");
