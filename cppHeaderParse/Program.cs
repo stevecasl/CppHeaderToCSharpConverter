@@ -21,6 +21,7 @@
 */
 
 using System;
+using System.CodeDom;
 using System.Collections.Generic;
 using System.Text;
 using System.IO;
@@ -67,9 +68,9 @@ namespace cppHeaderParse
                \{[\ \t\r\n]*
                     (?<enum_rows>[^;}]*?)
                \}[\ \t\r\n]*?;[\ \t\r\n]*?([\ \t]*(?<comments>//.*?)(?:\r?\n))?
-            )|( #### decode c version of enum;  EXAMPLE:typedef enum { red, green, blue } myEnum;
+            )|( #### decode c version of enum;  EXAMPLE:typedef enum MyEnum { red, green, blue } myEnum;
               (?<=\r?\n|;|\}) [\ \t\r\n]* 
-              [\ \t\r\n]*typedef[\ \t\r\n]enum[\ \t\r\n]+?[\ \t\r\n]*
+              [\ \t\r\n]*typedef[\ \t\r\n]+enum[\ \t\r\n]+?(?<enum_name_top>[a-zA-Z_][a-zA-Z0-9_]*)?[\ \t\r\n]*
                \{[\ \t\r\n]*
                     (?<enum_rows>[^;}]*?)
                \}[\ \t\r\n]*(?<enum_name>[a-zA-Z_][a-zA-Z0-9_]*)[\ \t\r\n]*?;[\ \t\r\n]*?([\ \t]*(?<comments>//.*?)(?:\r?\n))?
@@ -92,16 +93,30 @@ namespace cppHeaderParse
                LINE|PRAGMA[\ \t\r\n]+REGION|PRAGMA[\ \t\r\n]+ENDREGION))(?<def_stuff>.*?)(?:\r?\n)
             )|( #### Decode structs  EXAMPLE: struct Cat {int a; int b;}
               (?<=\r?\n|;|\}) [\ \t\r\n]*
-              struct[\ \t\r\n]+(?<struct_name>[a-zA-Z_][a-zA-Z0-9_]*)
+              [\ \t\r\n]+struct[\ \t\r\n]+(?<struct_name>[a-zA-Z_][a-zA-Z0-9_]*)
                [\ \t\r\n]*\{[\ \t\r\n]*
                 (?<struct_rows>[^\}]*?)
                [\ \t\r\n]*\}[\ \t\r\n]*
               (?<struct_imp>[a-zA-Z_][a-zA-Z0-9_]*)?[\ \t\r\n]*;([\ \t]*(?<comments>//.*?)(?:\r?\n))?
+            )|( #### Decode structs  EXAMPLE: typedef struct Cat {int a; int b;}
+              (?<=\r?\n|;|\}) [\ \t\r\n]*
+              [\ \t\r\n]+(?<tyd>typedef)[\ \t\r\n]+struct[\ \t\r\n]+(?<struct_nameP>[a-zA-Z_][a-zA-Z0-9_]*)
+               [\ \t\r\n]*\{[\ \t\r\n]*
+                (?<struct_rows>[^\}]*?)
+               [\ \t\r\n]*\}[\ \t\r\n]*
+              (?<struct_imp>[a-zA-Z_][a-zA-Z0-9_]*)?[\ \t\r\n]*;([\ \t]*(?<comments>//.*?)(?:\r?\n))?
+            )|( #### Decode structs  EXAMPLE: typedef struct {int a; int b;} Cat
+              (?<=\r?\n|;|\}) [\ \t\r\n]*
+              [\ \t\r\n]+(?<tyd>typedef)[\ \t\r\n]+struct
+               [\ \t\r\n]+(?<struct_namePt>[a-zA-Z_][a-zA-Z0-9_]*)?[\ \t\r\n]*\{[\ \t\r\n]*
+                (?<struct_rows>[^\}]*?)
+               [\ \t\r\n]*\}[\ \t\r\n]*
+              (?<struct_imp>[a-zA-Z_][a-zA-Z0-9_]*)?[\ \t\r\n]*(?<struct_namePo>[a-zA-Z_][a-zA-Z0-9_]*);([\ \t]*(?<comments>//.*?)(?:\r?\n))?
             )|( #### Match: const constants  EXAMPLE:const int myNum = 5; static char *SDK_NAME = ""fast"";
               (?<=\r?\n|;|\}) " + VarWithAssignment + @"
             )|( ####  Match: Commands EXAMPLE:\\C2CS_Set_Namespace: mynamespace 
               //[\ \t]*(?<cmd>(C2CS_Set_Namespace|C2CS_Set_ClassName|C2CS_Class_Write|
-              C2CS_NS_Write|C2CS_TOP_Write))[\ \t]?(?<cmd_val>.*?)(?:\r?\n)
+              C2CS_NS_Write|C2CS_TOP_Write|C2CS_FILE_SKIP))[\ \t]?(?<cmd_val>.*?)(?:\r?\n)
             )";
    
         /// <summary>
@@ -149,6 +164,10 @@ namespace cppHeaderParse
             { "void*","UIntPtr"},
             { "wchar_t","Char"},
             { "wchar_t*","string"},
+            { "uint8_t", "byte" },
+            { "int8_t", "sbyte" },
+            { "uint16_t", "ushort" },
+            { "int16_t", "short" },
         };
 
        
@@ -188,6 +207,7 @@ namespace cppHeaderParse
 
             // Let’s remove all the /*...*/ style comments
             text = Regex.Replace(text, @"/\*[^*]*\*+(?:[^*/][^*]*\*+)*/", string.Empty);
+            text = Regex.Replace(text, @"\\\r?\n", string.Empty, RegexOptions.Multiline);
 
             // Let’s create the three output containers, these will be merged at the end
             var top_area = new StringBuilder("// Generated using CppHeader2CS\r\n");
@@ -199,8 +219,9 @@ namespace cppHeaderParse
             try
             {
                 MatchCollection matches = Regex.Matches(text, mainParser, RegexOptions.Multiline |
-                                RegexOptions.IgnoreCase | RegexOptions.IgnorePatternWhitespace |
-                                RegexOptions.ExplicitCapture);
+                                                                          RegexOptions.IgnoreCase |
+                                                                          RegexOptions.IgnorePatternWhitespace |
+                                                                          RegexOptions.ExplicitCapture);
 
                 foreach (Match match in matches)
                 {
@@ -211,9 +232,14 @@ namespace cppHeaderParse
                         // we are going to do nothing here.
                         //Console.WriteLine("C2CS_SKIP time: " + timer.ElapsedMilliseconds + "ms");
                     }
+                    else if (comments.Contains("C2CS_FILE_SKIP"))
+                    {
+                        throw new FileSkipException();
+                        //Console.WriteLine("C2CS_SKIP time: " + timer.ElapsedMilliseconds + "ms");
+                    }
                     // Second, see if it is a #define with a parameter, Example: #define myVal 8 OR #define myInt 8+8
                     else if (match.Groups["def_name"].Success && !match.Groups["def_params"].Success
-                        && (match.Groups["def_value"].Length > 0))
+                             && (match.Groups["def_value"].Length > 0))
                     {
                         MatchDefineWithParameters(class_area, match);
                         //Console.WriteLine("#define with a parameter time: " + timer.ElapsedMilliseconds + "ms");
@@ -248,17 +274,36 @@ namespace cppHeaderParse
                         //Console.WriteLine("other predefinitions time: " + timer.ElapsedMilliseconds + "ms");
                     }
                     // Match structs,  Example: struct SomeStruct3 {char a; char b; char c;};
-                    else if (match.Groups["struct_name"].Success)
+                    else if (match.Groups["struct_name"].Success 
+                        || match.Groups["struct_nameP"].Success 
+                        || match.Groups["struct_namePo"].Success
+                        || (match.Groups["tyd"].Success && match.Groups["struct_imp"].Success))
                     {
                         //build the struct here
-                        string structName = match.Groups["struct_name"].Value;
-
+                        string structName = "NOT SET";
+                        if (match.Groups["struct_name"].Success)
+                        {
+                            structName = match.Groups["struct_name"].Value;
+                        }
+                        if (match.Groups["struct_nameP"].Success)
+                        {
+                            structName = match.Groups["struct_nameP"].Value;
+                        }
+                        bool isTypedef = match.Groups["tyd"].Success;
+                        if (isTypedef && match.Groups["struct_imp"].Success)
+                        {
+                            structName = match.Groups["struct_imp"].Value;
+                        }
                         //ns_section.AppendLine("    [StructLayout(LayoutKind.Sequential)]");
                         ns_area.AppendLine("    public struct " + structName + "\r\n    {");
 
                         string stuff = match.Groups["struct_rows"].ToString() + "\r\n";
                         MatchCollection structRows = Regex.Matches(stuff, VarWithAssignment, RegexOptions.Multiline
-                            | RegexOptions.IgnorePatternWhitespace | RegexOptions.ExplicitCapture);
+                                                                                             |
+                                                                                             RegexOptions
+                                                                                                 .IgnorePatternWhitespace |
+                                                                                             RegexOptions
+                                                                                                 .ExplicitCapture);
                         foreach (Match structRow in structRows)
                             if (!structRow.ToString().Contains("C2CS_SKIP"))
                             {
@@ -270,9 +315,10 @@ namespace cppHeaderParse
 
                         ns_area.AppendLine("    } " + match.Groups["comments"].Value);
 
-                        if (match.Groups["struct_imp"].Success && match.Groups["struct_imp"].Length > 0)
+                        if (match.Groups["struct_imp"].Success && match.Groups["struct_imp"].Length > 0 && !isTypedef)
                             class_area.AppendLine("        public static " + structName + " "
-                                + match.Groups["struct_imp"].Value + "; " + match.Groups["comments"].Value);
+                                                  + match.Groups["struct_imp"].Value + "; " +
+                                                  match.Groups["comments"].Value);
 
                         ns_area.AppendLine();
 
@@ -284,10 +330,15 @@ namespace cppHeaderParse
                     // Match constants,  Example: const int myVal = 55;
                     else if (match.Groups["type"].Success)
                     {
-                        string convertedVar = VarWithAssignmentConverter(match);
-                        if (convertedVar != null)
-                            class_area.AppendLine("        public const " + convertedVar);
-                        //Console.WriteLine("structs time: " + timer.ElapsedMilliseconds + "ms");
+                        // to be run against post
+                        string funcRegex = @"\(.*\)";
+                        if (!Regex.Match(match.Groups["post"].Value, funcRegex).Success)
+                        {
+                            string convertedVar = VarWithAssignmentConverter(match);
+                            if (convertedVar != null)
+                                class_area.AppendLine("        public const " + convertedVar);
+                            //Console.WriteLine("structs time: " + timer.ElapsedMilliseconds + "ms");
+                        }
                     }
                     // Match enums
                     else if (match.Groups["enum_name"].Success)
@@ -380,6 +431,8 @@ namespace cppHeaderParse
                             top_area.AppendLine(cmd_val);
                         else if (cmd == "C2CS_Class_Write")
                             class_area.AppendLine("        " + cmd_val);
+                        else if (cmd == "C2CS_FILE_SKIP")
+                            throw new FileSkipException();
                         //Console.WriteLine("Match C2CS commands time: " + timer.ElapsedMilliseconds + "ms");
                     }
                     //Console.WriteLine(ns_section.ToString());
@@ -391,7 +444,7 @@ namespace cppHeaderParse
                 final.Append(usings_area);
                 final.Append("\r\n\r\nnamespace " + namespace_name + "\r\n{\r\n");
                 final.Append(ns_area);
-                final.Append("    class " + class_name + "\r\n    {\r\n");
+                final.Append("    public class " + class_name + "\r\n    {\r\n");
                 final.Append(class_area);
                 final.AppendLine("    }\r\n}");
 
@@ -410,6 +463,10 @@ namespace cppHeaderParse
                 else
                     Console.Write(final);
             }
+            catch (FileSkipException)
+            {
+                Console.WriteLine("Skipping file complete duing to C2CS_FILE_SKIP being found");
+            }
             catch (Exception ex)
             {
                 Console.Write("Error: Error when processing source file.  Details:" + ex.ToString());
@@ -417,6 +474,10 @@ namespace cppHeaderParse
 
             // Display the time it took for the conversion
             Console.WriteLine("Info: CppHeader2CS conversion time: " + timer.ElapsedMilliseconds + "ms");
+        }
+
+        private class FileSkipException : Exception
+        {
         }
 
 
@@ -430,9 +491,22 @@ namespace cppHeaderParse
             string type = RemoveWhitespace(match.Groups["type"].ToString()); //removes whitespace
             string name = match.Groups["name"].ToString();
             string post = match.Groups["post"].ToString();
+            // Post may contain array definition
+            string arrayRegex = @"\[(?<length>[0-9a-zA-Z_]*)\]";
+            var m = Regex.Match(post, arrayRegex, RegexOptions.Multiline |
+                                                   RegexOptions.IgnoreCase |
+                                                   RegexOptions.IgnorePatternWhitespace |
+                                                   RegexOptions.ExplicitCapture);
             string csVersion = "";
             bool found = typeConversions.TryGetValue(type, out csVersion);
-            return found ? csVersion + " " + name + post : null;
+            if (m.Groups["length"].Success)
+            {
+                return found ? csVersion + "[] " + name + "; // length=" +  post : null;
+            }
+            else
+            {
+                return found ? csVersion + " " + name + post : null;
+            }
         }
 
 
@@ -673,6 +747,7 @@ $", RegexOptions.IgnorePatternWhitespace);
             Console.WriteLine("// C2CS_Set_ClassName MyClass - C2CS_Set_ClassName sets the class name to use. This is optional and if unspecified defaults to Constants.");
             Console.WriteLine("// C2CS_TYPE MyType - C2CS_TYPE is used in the comments after a #define to specify what type to use.  This is required if the automatic detection does not work as expected or the programmer wants to force a type. Example: #Default mySum (2+1) //C2CS_TYPE int;");
             Console.WriteLine("// C2CS_SKIP - Adding C2CS_SKIP in any comment forces CppHeader2CS to ignore the current line.");
+            Console.WriteLine("// C2CS_FILE_SKIP - Adding C2CS_FILE_SKIP in any comment forces CppHeader2CS to ignore the current file.");
         }
 
         /// <summary>

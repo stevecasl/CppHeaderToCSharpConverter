@@ -5,22 +5,39 @@ VisualStudioVersion = 14.0.25420.1
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CppHeader2CS", "cppHeaderParse\CppHeader2CS.csproj", "{2AB5D4C6-0E81-41E1-AD58-E9FB6F4B782A}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RegexTester", "RegexTester\RegexTester.csproj", "{3B3B4B9B-D8F6-43B9-B151-672D084AE9BA}"
+EndProject
 Global
-	GlobalSection(Performance) = preSolution
-		HasPerformanceSessions = true
-	EndGlobalSection
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
 		Debug|x86 = Debug|x86
+		Publish|Any CPU = Publish|Any CPU
 		Publish|x86 = Publish|x86
+		Release|Any CPU = Release|Any CPU
 		Release|x86 = Release|x86
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{2AB5D4C6-0E81-41E1-AD58-E9FB6F4B782A}.Debug|Any CPU.ActiveCfg = Debug|x86
 		{2AB5D4C6-0E81-41E1-AD58-E9FB6F4B782A}.Debug|x86.ActiveCfg = Debug|x86
 		{2AB5D4C6-0E81-41E1-AD58-E9FB6F4B782A}.Debug|x86.Build.0 = Debug|x86
+		{2AB5D4C6-0E81-41E1-AD58-E9FB6F4B782A}.Publish|Any CPU.ActiveCfg = Publish|x86
 		{2AB5D4C6-0E81-41E1-AD58-E9FB6F4B782A}.Publish|x86.ActiveCfg = Publish|x86
 		{2AB5D4C6-0E81-41E1-AD58-E9FB6F4B782A}.Publish|x86.Build.0 = Publish|x86
+		{2AB5D4C6-0E81-41E1-AD58-E9FB6F4B782A}.Release|Any CPU.ActiveCfg = Release|x86
 		{2AB5D4C6-0E81-41E1-AD58-E9FB6F4B782A}.Release|x86.ActiveCfg = Release|x86
 		{2AB5D4C6-0E81-41E1-AD58-E9FB6F4B782A}.Release|x86.Build.0 = Release|x86
+		{3B3B4B9B-D8F6-43B9-B151-672D084AE9BA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3B3B4B9B-D8F6-43B9-B151-672D084AE9BA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3B3B4B9B-D8F6-43B9-B151-672D084AE9BA}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{3B3B4B9B-D8F6-43B9-B151-672D084AE9BA}.Debug|x86.Build.0 = Debug|Any CPU
+		{3B3B4B9B-D8F6-43B9-B151-672D084AE9BA}.Publish|Any CPU.ActiveCfg = Release|Any CPU
+		{3B3B4B9B-D8F6-43B9-B151-672D084AE9BA}.Publish|Any CPU.Build.0 = Release|Any CPU
+		{3B3B4B9B-D8F6-43B9-B151-672D084AE9BA}.Publish|x86.ActiveCfg = Release|Any CPU
+		{3B3B4B9B-D8F6-43B9-B151-672D084AE9BA}.Publish|x86.Build.0 = Release|Any CPU
+		{3B3B4B9B-D8F6-43B9-B151-672D084AE9BA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3B3B4B9B-D8F6-43B9-B151-672D084AE9BA}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3B3B4B9B-D8F6-43B9-B151-672D084AE9BA}.Release|x86.ActiveCfg = Release|Any CPU
+		{3B3B4B9B-D8F6-43B9-B151-672D084AE9BA}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

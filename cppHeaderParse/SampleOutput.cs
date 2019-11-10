@@ -13,22 +13,48 @@ namespace mynamespace
 // This comments will appear in the namespace section.
 #if ! __MYTEST_INCLUDED__
 #endif // __MYTEST_INCLUDED__
+    public struct Flags
+    {
+        public byte relayPin;
+        public byte monitorPin;
+        public ushort targetPwm;
+        public ushort currentPwm;
+        public byte motorSize;
+        public sbyte rxChar;
+        public byte serialPort;
+        public byte fanId;
+        public byte overridePwm;
+        public byte overridePower;
+        public byte hadError;
+    } 
 
     public struct SomeStruct1
     {
         public ulong test127; 
         public long _test_28;
         public float _test_29;
+        public int[] _arr1; // length=[2];
     } // <-- this will actually get put into the class area
 
- [StructLayout(LayoutKind.Sequential)]
-    public struct SomeStruct2
+    public struct PostNameStruct
     {
-        public ulong test123; //this will get converted to a UInt64
-        public long test124;// some comments
-        public UIntPtr myVoidPtr;
-    } //some notes here
+        public int sf1;
+        public double sf2;
+    } 
 
+    public struct PreNameOnlyStruct
+    {
+        public int sf1;
+        public double sf2;
+    } 
+
+    public struct PreNameStruct
+    {
+        public int sf1;
+        public double sf2;
+    } 
+
+ [StructLayout(LayoutKind.Sequential)]
 #if (TEST && TEST) //TEST COMMENT
     public struct _SomeStruct0
     {
@@ -45,7 +71,6 @@ namespace mynamespace
     } //all on one line
 
 #endif // TEST && TEST
-
     public enum test1
     {
         test1
@@ -98,19 +123,12 @@ namespace mynamespace
 #if TEST
 #endif // ifdef TEST
 
-
-// The 'defined' preprocessor keyword is supported. Since the logic is the similar, c++ logic will pass through.
+// The 'defined' style of pre-defines are supported. Since the logic is the similar, c++ logic will pass through.
 #if !(TEST1 && TEST2 || TEST3) 
 #endif 
 
-
-#if DEBUG
-#else
-#endif
-
 #region start
 #endregion
-
 
 
     public struct StructWithBitFields
@@ -121,7 +139,6 @@ namespace mynamespace
 
     public struct UserTypeTest1
     {
-        public SomeStruct2 myUserStruct; 
         public EnumTest2 myUserDefEnum;
     } 
 
@@ -135,7 +152,7 @@ namespace mynamespace
         public UserTypeTest1 myUserDefEnum2;
     } 
 
-    class myClass
+    public class myClass
     {
         // This comment will appear in the class section.
 #if ! __MYTEST_INCLUDED__
@@ -145,31 +162,18 @@ namespace mynamespace
         public const short myShort= -100;		// short int is re-labeled to Int16
         public const int NUM_CALCS=6; 
 #endif // __MYTEST_INCLUDED__
-
         public static SomeStruct1 someStructInstance1; // <-- this will actually get put into the class area
-        public static SomeStruct2 someStructInstance2; //some notes here
 #if (TEST && TEST) //TEST COMMENT
 #else
 #endif // TEST && TEST
-
         public const double LineFeedOnlyTest = -3.2;
         public const string LineFeedOnlyTest2= "fluidsD3D9";
 #if TEST
 #endif // ifdef TEST
-
 #if !(TEST1 && TEST2 || TEST3) 
 #endif 
-
-        // Initialize values based on preprocessor definitions.
-#if DEBUG
-        public const int duplicateVarName = 5 + 5;
-#else
-        public const int duplicateVarName = 7 + 7;
-#endif
-
 #region start
 #endregion
-
         public const bool My_Bool = true; //public const bool My_Bool = true 
         public const bool My_Bool2 = false; //public const bool My_Bool = false
         // Tabs/spaces are okay.  Also beginning and ending parentheses are okay. 

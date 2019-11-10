@@ -52,6 +52,36 @@ const int NUM_CALCS=6;
 // This will be added to both the namespace and class areas...
 #endif // __MYTEST_INCLUDED__
 
+typedef struct
+{
+    volatile uint8_t *relayPort;
+    volatile uint8_t *monitorPort;
+    uint8_t relayPin : 4;
+    uint8_t monitorPin : 4;
+    volatile uint16_t *pwmReg;
+    uint16_t targetPwm;
+    uint16_t currentPwm;
+    TimerEntry_t timer;
+    uint8_t motorSize;
+    char rxChar;
+    uint8_t serialPort;
+    uint8_t fanId;
+
+    FanStatusControl_t currentStatus;
+    FanPowercontrol_t currentPower;
+
+    struct
+    {
+        uint8_t overridePwm : 1;
+        uint8_t overridePower : 1;
+        uint8_t hadError : 1;
+    } Flags;
+
+} Fan_t;
+
+int somefunction(uint32_t x, uint16_t z);
+uint8_t Logging_LogErr(char const * msg, uint16_t len);
+
 // Here are some structs that get converted into the namespace area but if there is a following implementation it gets added to the class area....
 // Multi-line struct test
   struct SomeStruct1 
@@ -65,8 +95,30 @@ const int NUM_CALCS=6;
 		_test_28;
 		float 
 		_test_29;
+        int _arr1[2];
   } 
 someStructInstance1 ;  // <-- this will actually get put into the class area
+
+
+typedef struct
+{
+    int sf1;
+    double sf2;
+} PostNameStruct;
+
+typedef struct PreNameOnlyStruct
+{
+    int sf1;
+    double sf2;
+} ;
+
+
+typedef struct _PreNameStruct
+{
+    int sf1;
+    double sf2;
+} PreNameStruct;
+
 
 // Here we add a StructLayout to a struct...
 // C2CS_NS_Write  [StructLayout(LayoutKind.Sequential)]
@@ -92,6 +144,21 @@ struct SomeStruct2{
   struct SomeStruct3 {unsigned char r; unsigned char b; unsigned char g;}; //all on one line
   
 #endif // TEST && TEST
+
+// Test nested struct
+typedef struct _SomeStructOuter
+{
+	int test1;
+	int test2;
+	struct{
+		int anonTest1;
+		int anonTest2;
+	};
+	struct {
+		int innerTest1;
+		int innerTest2;
+	} InnerNamed;
+} SomeStructOuter;
 
 
 // Enum samples/Testing...
@@ -133,6 +200,12 @@ enum EnumTest4
  {
    _Test,
 };
+
+// test top and bottom
+typedef enum _EnumTest5 {
+	Et5Test1,
+	Et5Test2,
+} EnumTest5
 
 // The source file should be error free, CppHeader2CS will sometimes skip incorrect code...
 enum SHOULD_BE_SKIPPED41 { red, green, blue } e;  // skipped - invalid enum
