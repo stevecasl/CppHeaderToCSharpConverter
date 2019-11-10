@@ -49,8 +49,9 @@ namespace cppHeaderParse
            (public[\ \t\r\n]*?|protected[\ \t\r\n]*?|private[\ \t\r\n]*?)?
            (static[\ \t\r\n]*?)?
            (const[\ \t\r\n]*?)?
+           (volatile[\ \t\r\n]*?)?
            (?<type>
-             (((un)?signed)[\ \t\r\n]*?)? ((char|wchar_t|void)[\ \t\r\n]*?\*|short[\ \t\r\n]+int|long[\ \t\r\n]+(int|long)|int|char|short|long)
+             (((un)?signed)[\ \t\r\n]*?)? ((char|wchar_t|void|u?int8_t|u?int16_t|u?int32_t)[\ \t\r\n]*?\*|short[\ \t\r\n]+int|long[\ \t\r\n]+(int|long)|int|char|short|long)
              |[a-zA-Z_][a-zA-Z0-9_]*
            )[\ \t\r\n]*
            (?<name>[a-zA-Z_][a-zA-Z0-9_]*)[\ \t\r\n]*
@@ -289,10 +290,24 @@ namespace cppHeaderParse
                         {
                             structName = match.Groups["struct_nameP"].Value;
                         }
+
+                        if (match.Groups["struct_namePo"].Success)
+                        {
+                            structName = match.Groups["struct_namePo"].Value;
+                        }
+                        if (match.Groups["struct_namePt"].Success)
+                        {
+                            structName = match.Groups["struct_namePt"].Value;
+                        }
                         bool isTypedef = match.Groups["tyd"].Success;
                         if (isTypedef && match.Groups["struct_imp"].Success)
                         {
-                            structName = match.Groups["struct_imp"].Value;
+                            // try to deal a bit better (but still badly) with nested structs
+                            if (!match.Groups["struct_namePo"].Success && !match.Groups["struct_namePt"].Success
+                                && !match.Groups["struct_nameP"].Success) // will always be the earlier definition, if done at top
+                            {
+                                structName = match.Groups["struct_imp"].Value;
+                            }
                         }
                         //ns_section.AppendLine("    [StructLayout(LayoutKind.Sequential)]");
                         ns_area.AppendLine("    public struct " + structName + "\r\n    {");
@@ -491,6 +506,8 @@ namespace cppHeaderParse
             string type = RemoveWhitespace(match.Groups["type"].ToString()); //removes whitespace
             string name = match.Groups["name"].ToString();
             string post = match.Groups["post"].ToString();
+            bool isPtr = type.IndexOf('*') > -1; // ptrs won't be valid, so just replace with an id for them
+            type = type.Replace('*', ' ').Trim();
             // Post may contain array definition
             string arrayRegex = @"\[(?<length>[0-9a-zA-Z_]*)\]";
             var m = Regex.Match(post, arrayRegex, RegexOptions.Multiline |
@@ -499,6 +516,10 @@ namespace cppHeaderParse
                                                    RegexOptions.ExplicitCapture);
             string csVersion = "";
             bool found = typeConversions.TryGetValue(type, out csVersion);
+            if (isPtr)
+            {
+                name = "ptr_" + name;
+            }
             if (m.Groups["length"].Success)
             {
                 return found ? csVersion + "[] " + name + "; // length=" +  post : null;

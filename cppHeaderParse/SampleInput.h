@@ -154,10 +154,12 @@ typedef struct _SomeStructOuter
 		int anonTest1;
 		int anonTest2;
 	};
+	int afterAnon;
 	struct {
 		int innerTest1;
 		int innerTest2;
 	} InnerNamed;
+	int afterInnerNamed;
 } SomeStructOuter;
 
 
